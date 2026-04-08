@@ -40,7 +40,7 @@
         <h2>Book Details</h2>
         <div id="detailsContent">
           <p class="muted">
-            Click any book from the search results or the public bookshelf collection to view details here.
+            Click any book from the search results or collection below to view details here.
           </p>
         </div>
       </aside>
@@ -49,11 +49,12 @@
     <section class="panel">
       <h2>Public Bookshelf Collection</h2>
       <p class="small-note">
-        This section loads your public Google Books shelf named
-        <strong>milestone 3</strong>.
+        This section first tries your public bookshelf named
+        <strong>milestone 3</strong>. If Google Books bookshelf access fails,
+        it automatically loads a predefined Google Books collection so the app still works.
       </p>
       <div id="collectionMessage" class="message">
-        Loading bookshelf collection...
+        Loading collection...
       </div>
       <div id="collection" class="collection-grid"></div>
     </section>
