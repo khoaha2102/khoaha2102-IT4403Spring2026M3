@@ -5,7 +5,7 @@ let allResults = [];
 let currentPage = 1;
 
 // Replace these with your own public bookshelf values.
-const BOOKSHELF_USER_ID = "YOUR_PUBLIC_USER_ID";
+const BOOKSHELF_USER_ID = "0EkpzaYpVk8lJNNCBw37gg";
 const BOOKSHELF_ID = "0";
 
 $(document).ready(function () {
