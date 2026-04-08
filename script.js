@@ -5,9 +5,6 @@ const MAX_RESULTS = 50;
 let allResults = [];
 let currentPage = 1;
 
-const BOOKSHELF_USER_ID = "0EkpzaYpVk8lJNNCBw37gg";
-const TARGET_SHELF_NAME = "milestone 3";
-
 $(document).ready(function () {
   $("#searchBtn").on("click", function () {
     performSearch();
@@ -19,7 +16,7 @@ $(document).ready(function () {
     }
   });
 
-  loadBookshelfCollection();
+  loadCollection();
 });
 
 function performSearch() {
@@ -62,9 +59,8 @@ function performSearch() {
       const items3 = response3[0].items || [];
 
       const combined = items1.concat(items2, items3);
-
-      // remove duplicates by id
       const uniqueMap = new Map();
+
       combined.forEach(function (book) {
         if (book.id && !uniqueMap.has(book.id)) {
           uniqueMap.set(book.id, book);
@@ -173,77 +169,8 @@ function showDetails(book, sourceLabel) {
   `);
 }
 
-function loadBookshelfCollection() {
-  $("#collectionMessage").text("Loading public bookshelf collection...");
-
-  $.getJSON(
-    `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves`,
-    {
-      key: API_KEY
-    }
-  )
-    .done(function (shelfResponse) {
-      const shelves = shelfResponse.items || [];
-
-      const matchingShelf = shelves.find(function (shelf) {
-        return (
-          shelf.title &&
-          shelf.title.toLowerCase().trim() === TARGET_SHELF_NAME.toLowerCase().trim()
-        );
-      });
-
-      if (!matchingShelf) {
-        loadFallbackCollection(
-          `Could not find public bookshelf "${TARGET_SHELF_NAME}". Loading fallback collection instead.`
-        );
-        return;
-      }
-
-      const shelfId = matchingShelf.id;
-
-      $.getJSON(
-        `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves/${shelfId}/volumes`,
-        {
-          maxResults: 12,
-          startIndex: 0,
-          key: API_KEY
-        }
-      )
-        .done(function (volumeResponse) {
-          const items = volumeResponse.items || [];
-          $("#collection").empty();
-
-          if (items.length === 0) {
-            loadFallbackCollection(
-              `Public bookshelf "${matchingShelf.title}" is empty. Loading fallback collection instead.`
-            );
-            return;
-          }
-
-          $("#collectionMessage").text(
-            `Showing books from public bookshelf: ${matchingShelf.title}`
-          );
-
-          items.forEach(function (book) {
-            const card = createBookCard(book, false);
-            $("#collection").append(card);
-          });
-        })
-        .fail(function () {
-          loadFallbackCollection(
-            "Could not load books from the public bookshelf. Loading fallback collection instead."
-          );
-        });
-    })
-    .fail(function () {
-      loadFallbackCollection(
-        "Could not load public bookshelves for this user. Loading fallback collection instead."
-      );
-    });
-}
-
-function loadFallbackCollection(messageText) {
-  $("#collectionMessage").text(messageText);
+function loadCollection() {
+  $("#collectionMessage").text("Loading collection...");
 
   $.getJSON("https://www.googleapis.com/books/v1/volumes", {
     q: "web development programming html css javascript",
@@ -256,13 +183,11 @@ function loadFallbackCollection(messageText) {
       $("#collection").empty();
 
       if (items.length === 0) {
-        $("#collectionMessage").text("No books found in the fallback collection.");
+        $("#collectionMessage").text("No books found in the collection.");
         return;
       }
 
-      $("#collectionMessage").text(
-        "Showing Google Books collection for web development."
-      );
+      $("#collectionMessage").text("Showing a Google Books collection.");
 
       items.forEach(function (book) {
         const card = createBookCard(book, false);
