@@ -45,7 +45,7 @@ function performSearch() {
     .done(function (firstResponse) {
       $.getJSON("https://www.googleapis.com/books/v1/volumes", {
         q: keyword,
-        maxResults: 10,
+        maxResults: 40,
         startIndex: 40,
         key: API_KEY
       })
@@ -64,7 +64,7 @@ function performSearch() {
           }
 
           $("#searchMessage").text(
-            "Showing up to 50 search results. Click a book to view details."
+            `Showing ${allResults.length} results (up to 50). Click a book to view details.`
           );
 
           renderPage(currentPage);
