@@ -36,45 +36,57 @@ function performSearch() {
   $("#results").empty();
   $("#pagination").empty();
 
-  $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-    q: keyword,
-    maxResults: 40,
-    startIndex: 0,
-    key: API_KEY
-  })
-    .done(function (firstResponse) {
-      $.getJSON("https://www.googleapis.com/books/v1/volumes", {
-        q: keyword,
-        maxResults: 40,
-        startIndex: 40,
-        key: API_KEY
-      })
-        .done(function (secondResponse) {
-          const firstItems = firstResponse.items || [];
-          const secondItems = secondResponse.items || [];
+  $.when(
+    $.getJSON("https://www.googleapis.com/books/v1/volumes", {
+      q: keyword,
+      maxResults: 20,
+      startIndex: 0,
+      key: API_KEY
+    }),
+    $.getJSON("https://www.googleapis.com/books/v1/volumes", {
+      q: keyword,
+      maxResults: 20,
+      startIndex: 20,
+      key: API_KEY
+    }),
+    $.getJSON("https://www.googleapis.com/books/v1/volumes", {
+      q: keyword,
+      maxResults: 20,
+      startIndex: 40,
+      key: API_KEY
+    })
+  )
+    .done(function (response1, response2, response3) {
+      const items1 = response1[0].items || [];
+      const items2 = response2[0].items || [];
+      const items3 = response3[0].items || [];
 
-          allResults = firstItems.concat(secondItems).slice(0, MAX_RESULTS);
-          currentPage = 1;
+      const combined = items1.concat(items2, items3);
 
-          if (allResults.length === 0) {
-            $("#searchMessage").text("No books found for that keyword.");
-            $("#results").empty();
-            $("#pagination").empty();
-            return;
-          }
+      // remove duplicates by id
+      const uniqueMap = new Map();
+      combined.forEach(function (book) {
+        if (book.id && !uniqueMap.has(book.id)) {
+          uniqueMap.set(book.id, book);
+        }
+      });
 
-          $("#searchMessage").text(
-            `Showing ${allResults.length} results (up to 50). Click a book to view details.`
-          );
+      allResults = Array.from(uniqueMap.values()).slice(0, MAX_RESULTS);
+      currentPage = 1;
 
-          renderPage(currentPage);
-          renderPagination();
-        })
-        .fail(function () {
-          $("#searchMessage").text(
-            "Could not load the second set of results. Please try again."
-          );
-        });
+      if (allResults.length === 0) {
+        $("#searchMessage").text("No books found for that keyword.");
+        $("#results").empty();
+        $("#pagination").empty();
+        return;
+      }
+
+      $("#searchMessage").text(
+        `Showing ${allResults.length} results. Click a book to view details.`
+      );
+
+      renderPage(currentPage);
+      renderPagination();
     })
     .fail(function () {
       $("#searchMessage").text("Search request failed. Please try again later.");
