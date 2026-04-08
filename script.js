@@ -4,9 +4,8 @@ const MAX_RESULTS = 50;
 let allResults = [];
 let currentPage = 1;
 
-// Replace these with your own public bookshelf values.
 const BOOKSHELF_USER_ID = "0EkpzaYpVk8lJNNCBw37gg";
-const BOOKSHELF_ID = "0";
+const TARGET_SHELF_NAME = "milestone 3";
 
 $(document).ready(function () {
   $("#searchBtn").on("click", function () {
@@ -160,39 +159,64 @@ function showDetails(book, sourceLabel) {
 }
 
 function loadBookshelfCollection() {
-  if (BOOKSHELF_USER_ID === "YOUR_PUBLIC_USER_ID") {
-    $("#collectionMessage").text(
-      "Add your public bookshelf user ID and bookshelf ID in script.js to load this section."
-    );
-    return;
-  }
-
-  $("#collectionMessage").text("Loading bookshelf collection...");
+  $("#collectionMessage").text("Loading public bookshelf collection...");
 
   $.getJSON(
-    `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves/${BOOKSHELF_ID}/volumes`
+    `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves`
   )
-    .done(function (response) {
-      const items = response.items || [];
-      $("#collection").empty();
+    .done(function (shelfResponse) {
+      const shelves = shelfResponse.items || [];
 
-      if (items.length === 0) {
-        $("#collectionMessage").text("No books found in this public bookshelf.");
+      const matchingShelf = shelves.find(function (shelf) {
+        return (
+          shelf.title &&
+          shelf.title.toLowerCase().trim() === TARGET_SHELF_NAME.toLowerCase().trim()
+        );
+      });
+
+      if (!matchingShelf) {
+        $("#collectionMessage").text(
+          `Could not find a public bookshelf named "${TARGET_SHELF_NAME}".`
+        );
         return;
       }
 
-      $("#collectionMessage").text(
-        "Click a book from the bookshelf to view details."
-      );
+      const shelfId = matchingShelf.id;
 
-      items.slice(0, 12).forEach(function (book) {
-        const card = createBookCard(book, false);
-        $("#collection").append(card);
-      });
+      $.getJSON(
+        `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves/${shelfId}/volumes`,
+        {
+          maxResults: 12,
+          startIndex: 0
+        }
+      )
+        .done(function (volumeResponse) {
+          const items = volumeResponse.items || [];
+          $("#collection").empty();
+
+          if (items.length === 0) {
+            $("#collectionMessage").text("This public bookshelf is empty.");
+            return;
+          }
+
+          $("#collectionMessage").text(
+            `Showing books from public bookshelf: ${matchingShelf.title}`
+          );
+
+          items.forEach(function (book) {
+            const card = createBookCard(book, false);
+            $("#collection").append(card);
+          });
+        })
+        .fail(function () {
+          $("#collectionMessage").text(
+            "Found the bookshelf, but could not load its books."
+          );
+        });
     })
     .fail(function () {
       $("#collectionMessage").text(
-        "Could not load the public bookshelf. Make sure the user ID and bookshelf ID are correct and public."
+        "Could not load public bookshelves for this user."
       );
     });
 }
