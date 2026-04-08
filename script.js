@@ -1,3 +1,4 @@
+const API_KEY = "AIzaSyB2gMpdf1dDa2hKR3j9Zoe5vgJGSrPw7rU";
 const ITEMS_PER_PAGE = 10;
 const MAX_RESULTS = 50;
 
@@ -38,13 +39,15 @@ function performSearch() {
   $.getJSON("https://www.googleapis.com/books/v1/volumes", {
     q: keyword,
     maxResults: 40,
-    startIndex: 0
+    startIndex: 0,
+    key: API_KEY
   })
     .done(function (firstResponse) {
       $.getJSON("https://www.googleapis.com/books/v1/volumes", {
         q: keyword,
         maxResults: 10,
-        startIndex: 40
+        startIndex: 40,
+        key: API_KEY
       })
         .done(function (secondResponse) {
           const firstItems = firstResponse.items || [];
@@ -124,7 +127,7 @@ function createBookCard(book, fromSearch) {
     .append($("<h3></h3>").text(title))
     .append($("<p></p>").text(authors))
     .on("click", function () {
-      showDetails(book, fromSearch ? "Search Result" : "Bookshelf Collection");
+      showDetails(book, fromSearch ? "Search Result" : "Collection");
     });
 }
 
@@ -162,7 +165,10 @@ function loadBookshelfCollection() {
   $("#collectionMessage").text("Loading public bookshelf collection...");
 
   $.getJSON(
-    `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves`
+    `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves`,
+    {
+      key: API_KEY
+    }
   )
     .done(function (shelfResponse) {
       const shelves = shelfResponse.items || [];
@@ -175,8 +181,8 @@ function loadBookshelfCollection() {
       });
 
       if (!matchingShelf) {
-        $("#collectionMessage").text(
-          `Could not find a public bookshelf named "${TARGET_SHELF_NAME}".`
+        loadFallbackCollection(
+          `Could not find public bookshelf "${TARGET_SHELF_NAME}". Loading fallback collection instead.`
         );
         return;
       }
@@ -187,7 +193,8 @@ function loadBookshelfCollection() {
         `https://www.googleapis.com/books/v1/users/${BOOKSHELF_USER_ID}/bookshelves/${shelfId}/volumes`,
         {
           maxResults: 12,
-          startIndex: 0
+          startIndex: 0,
+          key: API_KEY
         }
       )
         .done(function (volumeResponse) {
@@ -195,7 +202,9 @@ function loadBookshelfCollection() {
           $("#collection").empty();
 
           if (items.length === 0) {
-            $("#collectionMessage").text("This public bookshelf is empty.");
+            loadFallbackCollection(
+              `Public bookshelf "${matchingShelf.title}" is empty. Loading fallback collection instead.`
+            );
             return;
           }
 
@@ -209,14 +218,48 @@ function loadBookshelfCollection() {
           });
         })
         .fail(function () {
-          $("#collectionMessage").text(
-            "Found the bookshelf, but could not load its books."
+          loadFallbackCollection(
+            "Could not load books from the public bookshelf. Loading fallback collection instead."
           );
         });
     })
     .fail(function () {
+      loadFallbackCollection(
+        "Could not load public bookshelves for this user. Loading fallback collection instead."
+      );
+    });
+}
+
+function loadFallbackCollection(messageText) {
+  $("#collectionMessage").text(messageText);
+
+  $.getJSON("https://www.googleapis.com/books/v1/volumes", {
+    q: "web development programming html css javascript",
+    maxResults: 12,
+    orderBy: "relevance",
+    key: API_KEY
+  })
+    .done(function (response) {
+      const items = response.items || [];
+      $("#collection").empty();
+
+      if (items.length === 0) {
+        $("#collectionMessage").text("No books found in the fallback collection.");
+        return;
+      }
+
       $("#collectionMessage").text(
-        "Could not load public bookshelves for this user."
+        "Showing Google Books collection for web development."
+      );
+
+      items.forEach(function (book) {
+        const card = createBookCard(book, false);
+        $("#collection").append(card);
+      });
+    })
+    .fail(function () {
+      $("#collectionMessage").text(
+        "Could not load the collection. Please try again later."
       );
     });
 }
